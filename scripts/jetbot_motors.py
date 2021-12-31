@@ -4,8 +4,7 @@ import time
 
 from Adafruit_MotorHAT import Adafruit_MotorHAT
 from std_msgs.msg import String
-
-
+from geometry_msgs.msg import Twist
 
 
 # sets motor speed between [-1.0, 1.0]
@@ -67,7 +66,36 @@ def on_cmd_str(msg):
 	else:
 		rospy.logerror(rospy.get_caller_id() + ' invalid cmd_str=%s', msg.data)
 
-
+def on_cmd_twist(msg):
+	# z<0 turn right , z>0 turn left
+	roatation_time = msg.angular.z
+	straight_move_time = msg.linear.x
+	if roatation_time != 0:
+		if roatation_time < 0:
+			rospy.loginfo('turn right %f sec', abs(roatation_time))
+			set_speed(motor_left_ID,  -1.0)
+			set_speed(motor_right_ID, 1.0) 
+			rospy.sleep(abs(roatation_time))
+			all_stop()
+		else:
+			rospy.loginfo('turn left %f sec', abs(roatation_time))
+			set_speed(motor_left_ID,  1.0)
+			set_speed(motor_right_ID, -1.0)
+			rospy.sleep(abs(roatation_time))
+			all_stop()
+	if straight_move_time != 0:
+		if straight_move_time < 0:
+			rospy.loginfo('move backward %f sec', abs(straight_move_time))
+			set_speed(motor_left_ID,  1.0)
+			set_speed(motor_right_ID, 1.0) 
+			rospy.sleep(abs(straight_move_time))
+			all_stop()
+		if straight_move_time > 0:
+			rospy.loginfo('move forward %f sec', abs(straight_move_time))
+			set_speed(motor_left_ID,  -1.0)
+			set_speed(motor_right_ID, -1.0)
+			rospy.sleep(abs(straight_move_time))
+			all_stop()
 # initialization
 if __name__ == '__main__':
 
@@ -89,6 +117,8 @@ if __name__ == '__main__':
 	rospy.Subscriber('~cmd_dir', String, on_cmd_dir)
 	rospy.Subscriber('~cmd_raw', String, on_cmd_raw)
 	rospy.Subscriber('~cmd_str', String, on_cmd_str)
+	
+	rospy.Subscriber('~cmd_twist', Twist, on_cmd_twist)
 
 	# start running
 	rospy.spin()
